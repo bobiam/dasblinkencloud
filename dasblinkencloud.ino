@@ -48,7 +48,8 @@ void setup() {
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { lightning, red_rand, green_rand, blue_rand, off, flashlight100, flashlight50, flashlight10, reset_brightness, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand, bw_rand, rainbow_cylon, };
+SimplePatternList gPatterns = { lightning, red_rand, green_rand, blue_rand, off, flashlight100, flashlight50, flashlight10, reset_brightness, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand, bw_rand, rainbow_cylon };
+int num_patterns = 21;
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
@@ -69,20 +70,39 @@ void loop()
 
   if(BTSerial.available())
   {
+    //get the command off the Bluetooth buffer
     byte c = BTSerial.read();
     BTSerial.print(" I heard  ");
     BTSerial.println(c);
-    if(c == 110 || c == 78)
+    
+    //l = last pattern
+    if(c == 108)
+    {
+      lastPattern();           
+      BTSerial.print("Moving back to pattern index ");
+      BTSerial.println(gCurrentPatternNumber);
+    }    
+    
+    //n = next pattern
+    if(c == 110)
     {
       nextPattern();
-      BTSerial.println("Advancing");
+      BTSerial.print("Advancing to pattern index ");
+      BTSerial.println(gCurrentPatternNumber);
     }    
-    if(c > -1 && c < 12)
+    
+    //p should always be followed by an integer, run a specific pattern
+    if(c == 112)
     {
-      //use this pattern number
-      gCurrentPatternNumber = c;
+      //specific pattern.  Read an integer off of the buffer
+      gCurrentPatternNumber = BTSerial.parseInt();
+      if(gCurrentPatternNumber < 0 || gCurrentPatternNumber > num_patterns - 1)
+      {
+        BTSerial.println("Problem with pattern requested, defaulting to first pattern");
+        gCurrentPatternNumber = 0;        
+      }
       BTSerial.print("Running pattern");
-      BTSerial.println(c);
+      BTSerial.println(gCurrentPatternNumber);
     }
     if(c == 98){
       if(brightness > 50)
@@ -117,6 +137,15 @@ void nextPattern()
   gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
 }
 
+void lastPattern()
+{
+  if(gCurrentPatternNumber > 0)
+  {
+    gCurrentPatternNumber = gCurrentPatternNumber - 1;
+  }else{
+    gCurrentPatternNumber = num_patterns - 1;
+  }
+}
 
 void green_rand()
 {
