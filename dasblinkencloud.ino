@@ -1,5 +1,5 @@
 #include "FastLED.h"
-#include <SoftwareSerial.h>
+#include "SoftwareSerial.h"
 
 SoftwareSerial BTSerial(2, 3); // RX | TX
 
@@ -26,7 +26,7 @@ FASTLED_USING_NAMESPACE
 CRGB leds[NUM_LEDS];
 
 
-#define FRAMES_PER_SECOND  120
+#define FRAMES_PER_SECOND  200
 
 byte brightness = 255;
 
@@ -42,13 +42,14 @@ void setup() {
   // set master brightness control
   FastLED.setBrightness(brightness);
 
-  BTSerial.begin(9600);  
+  BTSerial.begin(57600);  
+  BTSerial.setTimeout(10);
 }
 
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { lightning, red_rand, green_rand, blue_rand, off, flashlight100, flashlight50, flashlight10, reset_brightness, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand, bw_rand, rainbow_cylon };
+SimplePatternList gPatterns = { lightning, rainbow_cylon, bw_rand, red_rand, green_rand, blue_rand, flashlight, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand  };
 int num_patterns = 21;
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
@@ -105,24 +106,9 @@ void loop()
       BTSerial.println(gCurrentPatternNumber);
     }
     if(c == 98){
-      if(brightness > 50)
-      {
-        brightness = brightness - 50;
-      }else{
-        brightness = 0;
-      }
-      BTSerial.print("Lowering brightness to: ");
-      BTSerial.println(brightness);
-      FastLED.setBrightness(brightness);
-    }
-    if(c == 66){
-      if(brightness <205)
-      {
-        brightness = brightness + 50;
-      }else{
-        brightness = 255;
-      }
-      BTSerial.print("Raising brightness to: ");
+      //setting brightness, Read an integer off of the buffer
+      brightness = BTSerial.parseInt();
+      BTSerial.print("Setting brightness to: ");
       BTSerial.println(brightness);
       FastLED.setBrightness(brightness);
     }
@@ -273,7 +259,6 @@ void palette_rand(CRGB colors[], int colorCount,int wait)
 void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(250); } }
 
 void rainbow_cylon() { 
-  FastLED.setBrightness(255);
   static uint8_t hue = 0;
   // First slide the led in one direction
   for(int i = 0; i < NUM_LEDS; i++) {
