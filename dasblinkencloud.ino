@@ -1,3 +1,9 @@
+//DasBlinkenCloud is a cloud-based LED lifeform built by Bob Eells in 2016.
+//This code comes from a number of places and stands on the shoulders of giants.
+//Many thanks to Mark Kriegsman, Andrew Tuline, Daniel Wilson and the many others who've shared their blinky light code on the web.
+//I've attempted to preserve comments giving attribution on patterns that aren't mine below.
+//The structure of this code borrows heavily from the FastLED DemoReel pattern.
+
 #include "FastLED.h"
 #include "SoftwareSerial.h"
 
@@ -5,29 +11,17 @@ SoftwareSerial BTSerial(2, 3); // RX | TX
 
 FASTLED_USING_NAMESPACE
 
-// FastLED "100-lines-of-code" demo reel, showing just a few 
-// of the kinds of animation patterns you can quickly and easily 
-// compose using FastLED.  
-//
-// This example also shows one easy way to define multiple 
-// animations patterns and have them automatically rotate.
-//
-// -Mark Kriegsman, December 2014
-
 #if FASTLED_VERSION < 3001000
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
 #define DATA_PIN    6
-//#define CLK_PIN   4
 #define LED_TYPE    WS2811
 #define COLOR_ORDER RGB
 #define NUM_LEDS    33
+#define FRAMES_PER_SECOND  120
+
 CRGB leds[NUM_LEDS];
-
-
-#define FRAMES_PER_SECOND  200
-
 byte brightness = 255;
 
 void setup() {
@@ -49,8 +43,8 @@ void setup() {
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { lightning, rainbow_cylon, bw_rand, red_rand, green_rand, blue_rand, flashlight, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand  };
-int num_patterns = 21;
+SimplePatternList gPatterns = { lightning, rainbow_cylon, lightning_rainbow, bw_rand, red_rand, green_rand, blue_rand, flashlight, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm, fire_rand, water_rand, earth_rand, air_rand  };
+int num_patterns = 18;
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
@@ -287,24 +281,17 @@ void rainbow_cylon() {
   }
 }
 
-
-
 //  Lightnings is a program that lets you make an LED strip look like a 1D cloud of lightning
 //  Original by: Daniel Wilson, 2014
 //  Modified by: Andrew Tuline 2015
-//  This modified version creates lightning along various sections of the strip. Looks great inside my poly fill constructed cloud.
+//  Modified slightly by: Bob Eells 2016 - mostly for lightning_rainbow below
 
-uint8_t frequency = 50;                                       // controls the interval between strikes
+uint8_t frequency = 80;                                       // controls the interval between strikes
 uint8_t flashes = 8;                                          //the upper limit of flashes per strike
 unsigned int dimmer = 1;
 
 uint8_t ledstart;                                             // Starting location of a flash
 uint8_t ledlen;                                               // Length of a flash
-
-//  Lightnings is a program that lets you make an LED strip look like a 1D cloud of lightning
-//  Original by: Daniel Wilson, 2014
-//  Modified by: Andrew Tuline 2015
-//  Modified slightly by: Bob Eells 2016
 
 void lightning(){
   all(CRGB::Black);
@@ -323,6 +310,25 @@ void lightning(){
   } // for()
   delay(random8(frequency)*100);          // delay between strikes
 }
+
+void lightning_rainbow(){
+  all(CRGB::Black);
+  ledstart = random8(NUM_LEDS);           // Determine starting location of flash
+  ledlen = random8(NUM_LEDS-ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
+  for (int flashCounter = 0; flashCounter < random8(3,flashes); flashCounter++) {
+    if(flashCounter == 0) dimmer = 5;     // the brightness of the leader is scaled down by a factor of 5
+    else dimmer = random8(1,3);           // return strokes are brighter than the leader
+    fill_solid(leds+ledstart,ledlen,CHSV(random(255), 255, 255/dimmer));
+    FastLED.show();                       // Show a section of LED's
+    delay(random8(3,16));                 // duration of min/max delays in ms
+    fill_solid(leds+ledstart,ledlen,CHSV(random(255),255,0));   // Clear the section of LED's
+    FastLED.show();     
+    if (flashCounter == 0) delay (150);   // longer delay until next flash after the leader
+    delay(50+random8(100));               // shorter delay between strokes  
+  } // for()
+  delay(random8(frequency)*100);          // delay between strikes
+}
+
 
 
 void rainbow() 
