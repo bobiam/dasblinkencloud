@@ -19,7 +19,10 @@ FASTLED_USING_NAMESPACE
 #define LED_TYPE    WS2811
 #define COLOR_ORDER RGB
 #define NUM_LEDS    33
-#define FRAMES_PER_SECOND  120
+
+//fps is the maximum possible frames per second assuming the pattern contains no delays at all between frames.
+//which is often (but not always) the case.
+byte fps = 120; //frames per second
 
 CRGB leds[NUM_LEDS];
 byte brightness = 255;
@@ -57,7 +60,7 @@ void loop()
   // send the 'leds' array out to the actual LED strip
   FastLED.show();  
   // insert a delay to keep the framerate modest
-  FastLED.delay(1000/FRAMES_PER_SECOND); 
+  FastLED.delay(1000/fps); 
 
   // do some periodic updates
   EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
@@ -91,6 +94,7 @@ void loop()
     {
       //specific pattern.  Read an integer off of the buffer
       gCurrentPatternNumber = BTSerial.parseInt();
+      //protect it
       if(gCurrentPatternNumber < 0 || gCurrentPatternNumber > num_patterns - 1)
       {
         BTSerial.println("Problem with pattern requested, defaulting to first pattern");
@@ -99,12 +103,24 @@ void loop()
       BTSerial.print("Running pattern");
       BTSerial.println(gCurrentPatternNumber);
     }
+    
+    //b is brightness, and should have an integer brightness.
     if(c == 98){
       //setting brightness, Read an integer off of the buffer
       brightness = BTSerial.parseInt();
       BTSerial.print("Setting brightness to: ");
       BTSerial.println(brightness);
       FastLED.setBrightness(brightness);
+    }
+
+    //s is speed, and should have an integer that represents the new framerate
+        //p should always be followed by an integer, run a specific pattern
+    if(c == 115)
+    {
+      //new framerate
+      fps = BTSerial.parseInt();
+      BTSerial.print("Updated framerate to: ");
+      BTSerial.println(fps);
     }
   }
 }
